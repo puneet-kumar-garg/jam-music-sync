@@ -172,7 +172,7 @@ const App: React.FC = () => {
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
       newSocket.disconnect();
     };
-  }, [startAudioCapture]);
+  }, []);
 
   // Sync position updates
   useEffect(() => {
