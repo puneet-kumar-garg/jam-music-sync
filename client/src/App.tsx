@@ -23,7 +23,7 @@ interface SyncState {
 const App: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
-  const [hostId, setHostId] = useState<string>('');
+  const [, setHostId] = useState<string>('');
   const [isHost, setIsHost] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [clientCount, setClientCount] = useState<number>(0);
@@ -172,7 +172,7 @@ const App: React.FC = () => {
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
       newSocket.disconnect();
     };
-  }, []);
+  }, [startAudioCapture]);
 
   // Sync position updates
   useEffect(() => {
@@ -205,7 +205,7 @@ const App: React.FC = () => {
     return () => {
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
     };
-  }, [isPlaying, position]);
+  }, [isPlaying, position, currentTrack?.isLiveStream]);
 
   const createSession = async () => {
     try {
@@ -254,50 +254,7 @@ const App: React.FC = () => {
     setShowNameInput(false);
   };
 
-  const startMicCapture = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          sampleRate: 44100
-        }
-      });
-      
-      setMediaStream(stream);
-      setIsCapturing(true);
-      
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const destination = audioContext.createMediaStreamDestination();
-      
-      source.connect(destination);
-      
-      audioContextRef.current = audioContext;
-      sourceNodeRef.current = source;
-      destinationRef.current = destination;
-      
-      const track: Track = {
-        id: Date.now().toString(),
-        name: 'Spotify via Microphone',
-        duration: 0,
-        isLiveStream: true
-      };
-      
-      setCurrentTrack(track);
-      if (socket) {
-        socket.emit('track-change', { track });
-      }
-      
-      if (audioRef.current) {
-        audioRef.current.srcObject = destination.stream;
-      }
-      
-    } catch (error) {
-      console.error('Failed to capture microphone:', error);
-      alert('Failed to access microphone. Please grant microphone permissions.');
-    }
-  };
+  // Removed startMicCapture function as it's not used in current UI
 
   const startAudioCapture = async () => {
     try {
