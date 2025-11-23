@@ -119,6 +119,12 @@ io.on('connection', (socket) => {
     socket.isHost = isHost;
     socket.userName = name;
 
+    // Get all users list for sync state
+    const usersList = Array.from(session.clients.values()).map(client => ({
+      name: client.userName,
+      isHost: client.isHost
+    }));
+
     // Send current state to new client
     socket.emit('sync-state', {
       currentTrack: session.currentTrack,
@@ -126,7 +132,8 @@ io.on('connection', (socket) => {
       position: session.getCurrentPosition(),
       volume: session.volume,
       serverTime: Date.now(),
-      controlsLocked: session.controlsLocked
+      controlsLocked: session.controlsLocked,
+      users: usersList
     });
 
     // Get all users list

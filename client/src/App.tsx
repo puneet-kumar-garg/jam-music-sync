@@ -70,10 +70,15 @@ const App: React.FC = () => {
       setVolume(state.volume);
       setControlsLocked(state.controlsLocked);
       
+      // Update users from sync state
+      if (state.users) {
+        setUsers(state.users);
+        setClientCount(state.users.length);
+      }
+      
       if (audioRef.current && state.currentTrack) {
         audioRef.current.volume = state.volume;
         if (state.currentTrack.isLiveStream) {
-          // For live streams, guests need to connect to host's stream
           console.log('Setting up live stream for guest');
           audioRef.current.muted = !state.isPlaying;
           if (state.isPlaying) {
@@ -146,6 +151,7 @@ const App: React.FC = () => {
     });
 
     newSocket.on('track-change', (data) => {
+      console.log('Track changed:', data.track);
       setCurrentTrack(data.track);
       setPosition(0);
       setIsPlaying(false);
@@ -735,10 +741,21 @@ const App: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <p>Waiting for host to share audio...</p>
-                  <div className="guest-waiting">
-                    🎧 You'll hear audio when the host starts sharing
-                  </div>
+                  {currentTrack ? (
+                    <>
+                      <p>Listening to host's audio</p>
+                      <div className="guest-listening">
+                        🎵 {currentTrack.name}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p>Waiting for host to share audio...</p>
+                      <div className="guest-waiting">
+                        🎧 You'll hear audio when the host starts sharing
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
