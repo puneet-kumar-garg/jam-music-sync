@@ -52,7 +52,7 @@ const App: React.FC = () => {
   const localStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+    const serverUrl = 'https://jam-music-sync.vercel.app';
     const newSocket = io(serverUrl);
     setSocket(newSocket);
 
@@ -260,14 +260,8 @@ const App: React.FC = () => {
 
   const createSession = async () => {
     try {
-      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+      const serverUrl = 'https://jam-music-sync.vercel.app';
       console.log('Creating session with server:', serverUrl);
-      
-      // Test server connectivity first
-      const healthResponse = await fetch(`${serverUrl}/health`);
-      if (!healthResponse.ok) {
-        throw new Error(`Server not responding: ${healthResponse.status}`);
-      }
       
       const response = await fetch(`${serverUrl}/api/session`, {
         method: 'POST',
@@ -289,7 +283,7 @@ const App: React.FC = () => {
       joinSession(data.sessionId, true, data.hostId, 'Puneet');
     } catch (error) {
       console.error('Failed to create session:', error);
-      alert(`Failed to create session: ${error.message}\n\nServer: ${process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}`);
+      alert(`Failed to create session: ${error}\n\nServer: https://jam-music-sync.vercel.app`);
     }
   };
 
@@ -606,8 +600,9 @@ const App: React.FC = () => {
 
   if (!isConnected) {
     return (
-      <div className="app">
-        <div className="welcome">
+      <>
+        <div className="app">
+          <div className="welcome">
           <h1>🎵 JAM - Listen Together</h1>
           <div className="session-controls">
             <button onClick={createSession} className="btn-primary">
@@ -655,7 +650,12 @@ const App: React.FC = () => {
             )}
           </div>
         </div>
+        
+        <footer className="footer">
+          <p>© 2024 Puneet Kumar Garg. All rights reserved.</p>
+        </footer>
       </div>
+      </>
     );
   }
 
@@ -846,10 +846,11 @@ const App: React.FC = () => {
         />
       </main>
       
+      </div>
+      
       <footer className="footer">
         <p>© 2024 Puneet Kumar Garg. All rights reserved.</p>
       </footer>
-    </div>
   );
 };
 
