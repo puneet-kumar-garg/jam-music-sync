@@ -241,6 +241,17 @@ body {
   white-space: nowrap;
 }
 
+.audio-note {
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.5);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+  color: #ffc107;
+}
+
 .player {
   flex: 1;
   display: flex;

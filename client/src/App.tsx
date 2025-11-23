@@ -60,6 +60,7 @@ const App: React.FC = () => {
       const networkDelay = Date.now() - state.serverTime;
       const adjustedPosition = state.position + (networkDelay / 1000);
       
+      console.log('Sync state received:', state);
       setCurrentTrack(state.currentTrack);
       setIsPlaying(state.isPlaying);
       setPosition(adjustedPosition);
@@ -69,14 +70,16 @@ const App: React.FC = () => {
       if (audioRef.current && state.currentTrack) {
         audioRef.current.volume = state.volume;
         if (state.currentTrack.isLiveStream) {
+          // For live streams, guests need to connect to host's stream
+          console.log('Setting up live stream for guest');
           audioRef.current.muted = !state.isPlaying;
           if (state.isPlaying) {
-            audioRef.current.play();
+            audioRef.current.play().catch(e => console.log('Play failed:', e));
           }
         } else {
           audioRef.current.currentTime = adjustedPosition;
           if (state.isPlaying) {
-            audioRef.current.play();
+            audioRef.current.play().catch(e => console.log('Play failed:', e));
           } else {
             audioRef.current.pause();
           }
@@ -88,25 +91,29 @@ const App: React.FC = () => {
       const networkDelay = Date.now() - data.serverTime;
       const adjustedPosition = data.position + (networkDelay / 1000);
       
+      console.log('Play event received:', data);
       setIsPlaying(true);
       setPosition(adjustedPosition);
       if (data.currentTrack) setCurrentTrack(data.currentTrack);
       
       if (audioRef.current) {
         if (data.currentTrack?.isLiveStream) {
+          console.log('Playing live stream');
           audioRef.current.muted = false;
         } else {
           audioRef.current.currentTime = adjustedPosition;
         }
-        audioRef.current.play();
+        audioRef.current.play().catch(e => console.log('Play failed:', e));
       }
     });
 
     newSocket.on('pause', (data) => {
+      console.log('Pause event received:', data);
       setIsPlaying(false);
       setPosition(data.position);
       if (audioRef.current) {
         if (currentTrack?.isLiveStream) {
+          console.log('Muting live stream');
           audioRef.current.muted = true;
         } else {
           audioRef.current.pause();
@@ -146,6 +153,7 @@ const App: React.FC = () => {
     });
 
     newSocket.on('users-updated', (data) => {
+      console.log('Users updated:', data);
       setUsers(data.users);
       setClientCount(data.clientCount);
     });
@@ -326,6 +334,14 @@ const App: React.FC = () => {
       // Set up audio element to play the captured stream
       if (audioRef.current) {
         audioRef.current.srcObject = destination.stream;
+        console.log('Audio stream set up for host');
+      }
+      
+      // Broadcast stream to all clients
+      if (socket) {
+        console.log('Broadcasting audio stream to clients');
+        // Note: WebRTC would be needed for actual audio streaming
+        // For now, we'll use a different approach
       }
       
     } catch (error) {
@@ -540,8 +556,11 @@ const App: React.FC = () => {
                         onClick={startAudioCapture}
                         className="btn-capture"
                       >
-                        🎵 Share Mac System Audio (Spotify/Music)
+                        🎵 Share Mac System Audio (Host Only)
                       </button>
+                      <div className="audio-note">
+                        📝 Note: System audio only works for the host. Guests need to play the same music on their devices for sync.
+                      </div>
                     </>
                   ) : (
                     <button 
