@@ -600,9 +600,8 @@ const App: React.FC = () => {
 
   if (!isConnected) {
     return (
-      <>
-        <div className="app">
-          <div className="welcome">
+      <div className="app">
+        <div className="welcome">
           <h1>🎵 JAM - Listen Together</h1>
           <div className="session-controls">
             <button onClick={createSession} className="btn-primary">
@@ -655,7 +654,6 @@ const App: React.FC = () => {
           <p>© 2024 Puneet Kumar Garg. All rights reserved.</p>
         </footer>
       </div>
-      </>
     );
   }
 
