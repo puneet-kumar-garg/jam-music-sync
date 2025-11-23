@@ -143,9 +143,6 @@ const App: React.FC = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
-      if (data.track?.isLiveStream) {
-        startAudioCapture();
-      }
     });
 
     newSocket.on('users-updated', (data) => {
@@ -172,6 +169,7 @@ const App: React.FC = () => {
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
       newSocket.disconnect();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync position updates
@@ -205,7 +203,8 @@ const App: React.FC = () => {
     return () => {
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
     };
-  }, [isPlaying, position, currentTrack?.isLiveStream]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying, position]);
 
   const createSession = async () => {
     try {
@@ -416,7 +415,8 @@ const App: React.FC = () => {
       setSessionId(sessionParam);
       setShowNameInput(true);
     }
-  }, [socket, isConnected]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
 
   if (!isConnected) {
     return (
