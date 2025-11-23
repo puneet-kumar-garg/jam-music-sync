@@ -157,8 +157,8 @@ const App: React.FC = () => {
 
     newSocket.on('users-updated', (data) => {
       console.log('Users updated:', data);
-      setUsers(data.users);
-      setClientCount(data.clientCount);
+      setUsers(data.users || []);
+      setClientCount(data.clientCount || 0);
     });
 
     // WebRTC signaling events
@@ -289,6 +289,7 @@ const App: React.FC = () => {
   const joinSession = (id: string, host: boolean = false, hId: string = '', name: string = '') => {
     if (!socket) return;
     
+    console.log('Joining session:', { id, host, name });
     socket.emit('join-session', {
       sessionId: id,
       isHost: host,
@@ -649,12 +650,14 @@ const App: React.FC = () => {
         <h1>🎵 JAM</h1>
         <div className="session-info">
           <span className="session-id">Session: {sessionId}</span>
-          <div className="users-list">
-            <Users size={16} />
-            <span>{clientCount}</span>
-            <div className="users-dropdown">
+          <div className="users-section">
+            <div className="users-count">
+              <Users size={16} />
+              <span>{clientCount} online</span>
+            </div>
+            <div className="users-list-visible">
               {users.map((user, index) => (
-                <div key={index} className="user-item">
+                <div key={index} className="user-badge-small">
                   {user.isHost ? '👑' : '🎧'} {user.name}
                 </div>
               ))}
