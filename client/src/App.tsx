@@ -262,6 +262,13 @@ const App: React.FC = () => {
     try {
       const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
       console.log('Creating session with server:', serverUrl);
+      
+      // Test server connectivity first
+      const healthResponse = await fetch(`${serverUrl}/health`);
+      if (!healthResponse.ok) {
+        throw new Error(`Server not responding: ${healthResponse.status}`);
+      }
+      
       const response = await fetch(`${serverUrl}/api/session`, {
         method: 'POST',
         headers: {
@@ -270,7 +277,8 @@ const App: React.FC = () => {
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
       
       const data = await response.json();
@@ -281,7 +289,7 @@ const App: React.FC = () => {
       joinSession(data.sessionId, true, data.hostId, 'Puneet');
     } catch (error) {
       console.error('Failed to create session:', error);
-      alert('Failed to create session. Please check console for details.');
+      alert(`Failed to create session: ${error.message}\n\nServer: ${process.env.REACT_APP_SERVER_URL || 'http://localhost:3001'}`);
     }
   };
 
