@@ -8,14 +8,14 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: true,
+    origin: ["https://jammusicsync.netlify.app", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true
   }
 });
 
 app.use(cors({
-  origin: true,
+  origin: ["https://jammusicsync.netlify.app", "http://localhost:3000"],
   methods: ["GET", "POST"],
   credentials: true
 }));
@@ -23,7 +23,12 @@ app.use(express.json());
 
 // Root route
 app.get('/', (req, res) => {
-  res.json({ message: 'JAM Music Sync Server is running!', status: 'online' });
+  res.json({ 
+    message: 'JAM Music Sync Server is running!', 
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    sessions: sessions.size
+  });
 });
 
 // Store active sessions
@@ -77,7 +82,12 @@ app.post('/api/session', (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    sessions: sessions.size
+  });
 });
 
 // Get session info
