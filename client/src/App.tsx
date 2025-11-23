@@ -175,8 +175,23 @@ const App: React.FC = () => {
     });
 
     newSocket.on('user-joined', (data) => {
+      console.log('User joined for WebRTC:', data);
       if (isHost && localStreamRef.current) {
-        createPeerConnection(data.userId, newSocket);
+        setTimeout(() => {
+          createPeerConnection(data.userId, newSocket);
+        }, 1000);
+      }
+    });
+
+    newSocket.on('host-started-stream', (data) => {
+      console.log('Host started streaming');
+    });
+
+    newSocket.on('host-stopped-stream', () => {
+      console.log('Host stopped streaming');
+      setIsStreaming(false);
+      if (audioRef.current) {
+        audioRef.current.srcObject = null;
       }
     });
 
@@ -341,10 +356,17 @@ const App: React.FC = () => {
     };
 
     pc.ontrack = (event) => {
-      console.log('Received remote stream');
+      console.log('Received remote stream from host');
       if (audioRef.current) {
         audioRef.current.srcObject = event.streams[0];
+        audioRef.current.play().catch(e => console.log('Auto-play blocked:', e));
         setIsStreaming(true);
+        setCurrentTrack({
+          id: 'webrtc-stream',
+          name: 'Live Audio from Host',
+          duration: 0,
+          isLiveStream: true
+        });
       }
     };
 
@@ -440,6 +462,13 @@ const App: React.FC = () => {
       // Store stream for WebRTC sharing
       localStreamRef.current = stream;
       setIsStreaming(true);
+      
+      // Create peer connections for existing users
+      users.forEach(user => {
+        if (!user.isHost) {
+          // Will be handled by server signaling
+        }
+      });
       
       // Broadcast stream to all clients via WebRTC
       if (socket) {
@@ -661,42 +690,53 @@ const App: React.FC = () => {
             </>
           ) : (
             <div className="no-track">
-              <p>No audio source selected</p>
-              {(isHost || !controlsLocked) && (
-                <div className="audio-options">
-                  {!isCapturing ? (
-                    <>
-                      <button 
-                        onClick={startAudioCapture}
-                        className="btn-capture"
-                      >
-                        🎵 Share Mac System Audio (Host Only)
-                      </button>
-                      <div className="audio-note">
-                        🎉 WebRTC Audio Streaming: Host's audio will stream directly to all guests!
-                      </div>
-                      {isStreaming && (
-                        <div className="streaming-indicator">
-                          🔴 Live Streaming to {clientCount - 1} listeners
+              {isHost ? (
+                <>
+                  <p>Select audio source to share</p>
+                  <div className="audio-options">
+                    {!isCapturing ? (
+                      <>
+                        <button 
+                          onClick={startAudioCapture}
+                          className="btn-capture"
+                        >
+                          🎵 Share System Audio (Spotify/Music)
+                        </button>
+                        <div className="audio-note">
+                          🎉 Your audio will stream live to all listeners!
                         </div>
-                      )}
-                    </>
-                  ) : (
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={stopAudioCapture}
+                          className="btn-stop"
+                        >
+                          ⏹️ Stop Sharing
+                        </button>
+                        {isStreaming && (
+                          <div className="streaming-indicator">
+                            🔴 Live streaming to {clientCount - 1} listeners
+                          </div>
+                        )}
+                      </>
+                    )}
                     <button 
-                      onClick={stopAudioCapture}
-                      className="btn-stop"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="btn-upload"
                     >
-                      ⏹️ Stop Capture
+                      <Upload size={16} />
+                      Upload File
                     </button>
-                  )}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="btn-upload"
-                  >
-                    <Upload size={16} />
-                    Upload File
-                  </button>
-                </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>Waiting for host to share audio...</p>
+                  <div className="guest-waiting">
+                    🎧 You'll hear audio when the host starts sharing
+                  </div>
+                </>
               )}
             </div>
           )}

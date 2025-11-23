@@ -143,9 +143,14 @@ io.on('connection', (socket) => {
 
     // Notify host about new user for WebRTC connection
     if (!isHost) {
-      socket.to(sessionId).emit('user-joined', {
-        userId: socket.id,
-        userName: name
+      // Find host and notify them
+      session.clients.forEach((client, clientId) => {
+        if (client.isHost) {
+          socket.to(clientId).emit('user-joined', {
+            userId: socket.id,
+            userName: name
+          });
+        }
       });
     }
 
@@ -249,6 +254,7 @@ io.on('connection', (socket) => {
 
   // WebRTC signaling
   socket.on('webrtc-offer', (data) => {
+    console.log('Relaying WebRTC offer from', socket.id, 'to', data.to);
     socket.to(data.to).emit('webrtc-offer', {
       offer: data.offer,
       from: socket.id
@@ -256,6 +262,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('webrtc-answer', (data) => {
+    console.log('Relaying WebRTC answer from', socket.id, 'to', data.to);
     socket.to(data.to).emit('webrtc-answer', {
       answer: data.answer,
       from: socket.id
@@ -270,6 +277,20 @@ io.on('connection', (socket) => {
   });
 
   socket.on('start-audio-stream', () => {
+    console.log('Host started audio stream, notifying all clients in session', socket.sessionId);
+    const session = sessions.get(socket.sessionId);
+    if (session) {
+      // Create WebRTC connections to all non-host clients
+      session.clients.forEach((client, clientId) => {
+        if (!client.isHost && clientId !== socket.id) {
+          console.log('Initiating WebRTC for client:', clientId);
+          socket.to(clientId).emit('user-joined', {
+            userId: socket.id,
+            userName: socket.userName
+          });
+        }
+      });
+    }
     socket.to(socket.sessionId).emit('host-started-stream', {
       hostId: socket.id
     });
