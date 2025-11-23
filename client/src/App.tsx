@@ -844,11 +844,10 @@ const App: React.FC = () => {
         />
       </main>
       
-      </div>
-      
       <footer className="footer">
         <p>© 2024 Puneet Kumar Garg. All rights reserved.</p>
       </footer>
+    </div>
   );
 };
 
