@@ -8,14 +8,16 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "https://*.netlify.app", "https://*.vercel.app", "*"],
-    methods: ["GET", "POST"]
+    origin: true,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 app.use(cors({
-  origin: ["http://localhost:3000", "https://*.netlify.app", "https://*.vercel.app", "*"],
-  methods: ["GET", "POST"]
+  origin: true,
+  methods: ["GET", "POST"],
+  credentials: true
 }));
 app.use(express.json());
 

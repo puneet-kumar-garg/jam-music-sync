@@ -209,16 +209,27 @@ const App: React.FC = () => {
   const createSession = async () => {
     try {
       const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+      console.log('Creating session with server:', serverUrl);
       const response = await fetch(`${serverUrl}/api/session`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Session created:', data);
       setSessionId(data.sessionId);
       setHostId(data.hostId);
       setIsHost(true);
       joinSession(data.sessionId, true, data.hostId, 'Puneet');
     } catch (error) {
       console.error('Failed to create session:', error);
+      alert('Failed to create session. Please check console for details.');
     }
   };
 
