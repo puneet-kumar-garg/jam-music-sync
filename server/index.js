@@ -141,6 +141,14 @@ io.on('connection', (socket) => {
       clientCount: session.clients.size
     });
 
+    // Notify host about new user for WebRTC connection
+    if (!isHost) {
+      socket.to(sessionId).emit('user-joined', {
+        userId: socket.id,
+        userName: name
+      });
+    }
+
     console.log(`Client ${socket.id} joined session ${sessionId} as ${isHost ? 'host' : 'guest'}`);
   });
 
@@ -237,6 +245,38 @@ io.on('connection', (socket) => {
 
   socket.on('ping', () => {
     socket.emit('pong', Date.now());
+  });
+
+  // WebRTC signaling
+  socket.on('webrtc-offer', (data) => {
+    socket.to(data.to).emit('webrtc-offer', {
+      offer: data.offer,
+      from: socket.id
+    });
+  });
+
+  socket.on('webrtc-answer', (data) => {
+    socket.to(data.to).emit('webrtc-answer', {
+      answer: data.answer,
+      from: socket.id
+    });
+  });
+
+  socket.on('webrtc-ice-candidate', (data) => {
+    socket.to(data.to).emit('webrtc-ice-candidate', {
+      candidate: data.candidate,
+      from: socket.id
+    });
+  });
+
+  socket.on('start-audio-stream', () => {
+    socket.to(socket.sessionId).emit('host-started-stream', {
+      hostId: socket.id
+    });
+  });
+
+  socket.on('stop-audio-stream', () => {
+    socket.to(socket.sessionId).emit('host-stopped-stream');
   });
 
   socket.on('disconnect', () => {

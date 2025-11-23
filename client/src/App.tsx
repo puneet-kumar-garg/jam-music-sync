@@ -38,6 +38,8 @@ const App: React.FC = () => {
   const [latency, setLatency] = useState<number>(0);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [peerConnections, setPeerConnections] = useState<Map<string, RTCPeerConnection>>(new Map());
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +48,7 @@ const App: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const destinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
@@ -156,6 +159,25 @@ const App: React.FC = () => {
       console.log('Users updated:', data);
       setUsers(data.users);
       setClientCount(data.clientCount);
+    });
+
+    // WebRTC signaling events
+    newSocket.on('webrtc-offer', async (data) => {
+      await handleWebRTCOffer(data.offer, data.from, newSocket);
+    });
+
+    newSocket.on('webrtc-answer', async (data) => {
+      await handleWebRTCAnswer(data.answer, data.from);
+    });
+
+    newSocket.on('webrtc-ice-candidate', async (data) => {
+      await handleICECandidate(data.candidate, data.from);
+    });
+
+    newSocket.on('user-joined', (data) => {
+      if (isHost && localStreamRef.current) {
+        createPeerConnection(data.userId, newSocket);
+      }
     });
 
     newSocket.on('controls-toggled', (data) => {
@@ -272,7 +294,85 @@ const App: React.FC = () => {
     setShowNameInput(false);
   };
 
-  // Removed startMicCapture function as it's not used in current UI
+  // WebRTC functions
+  const createPeerConnection = async (userId: string, socket: any) => {
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('webrtc-ice-candidate', {
+          candidate: event.candidate,
+          to: userId
+        });
+      }
+    };
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, localStreamRef.current!);
+      });
+    }
+
+    setPeerConnections(prev => new Map(prev.set(userId, pc)));
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    
+    socket.emit('webrtc-offer', {
+      offer: offer,
+      to: userId
+    });
+  };
+
+  const handleWebRTCOffer = async (offer: RTCSessionDescriptionInit, from: string, socket: any) => {
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('webrtc-ice-candidate', {
+          candidate: event.candidate,
+          to: from
+        });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      console.log('Received remote stream');
+      if (audioRef.current) {
+        audioRef.current.srcObject = event.streams[0];
+        setIsStreaming(true);
+      }
+    };
+
+    setPeerConnections(prev => new Map(prev.set(from, pc)));
+
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    socket.emit('webrtc-answer', {
+      answer: answer,
+      to: from
+    });
+  };
+
+  const handleWebRTCAnswer = async (answer: RTCSessionDescriptionInit, from: string) => {
+    const pc = peerConnections.get(from);
+    if (pc) {
+      await pc.setRemoteDescription(answer);
+    }
+  };
+
+  const handleICECandidate = async (candidate: RTCIceCandidateInit, from: string) => {
+    const pc = peerConnections.get(from);
+    if (pc) {
+      await pc.addIceCandidate(candidate);
+    }
+  };
 
   const startAudioCapture = async () => {
     try {
@@ -337,11 +437,14 @@ const App: React.FC = () => {
         console.log('Audio stream set up for host');
       }
       
-      // Broadcast stream to all clients
+      // Store stream for WebRTC sharing
+      localStreamRef.current = stream;
+      setIsStreaming(true);
+      
+      // Broadcast stream to all clients via WebRTC
       if (socket) {
-        console.log('Broadcasting audio stream to clients');
-        // Note: WebRTC would be needed for actual audio streaming
-        // For now, we'll use a different approach
+        console.log('Broadcasting audio stream to clients via WebRTC');
+        socket.emit('start-audio-stream');
       }
       
     } catch (error) {
@@ -359,8 +462,19 @@ const App: React.FC = () => {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+    
+    // Close all peer connections
+    peerConnections.forEach(pc => pc.close());
+    setPeerConnections(new Map());
+    
+    localStreamRef.current = null;
     setIsCapturing(false);
+    setIsStreaming(false);
     setCurrentTrack(null);
+    
+    if (socket) {
+      socket.emit('stop-audio-stream');
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -559,8 +673,13 @@ const App: React.FC = () => {
                         🎵 Share Mac System Audio (Host Only)
                       </button>
                       <div className="audio-note">
-                        📝 Note: System audio only works for the host. Guests need to play the same music on their devices for sync.
+                        🎉 WebRTC Audio Streaming: Host's audio will stream directly to all guests!
                       </div>
+                      {isStreaming && (
+                        <div className="streaming-indicator">
+                          🔴 Live Streaming to {clientCount - 1} listeners
+                        </div>
+                      )}
                     </>
                   ) : (
                     <button 
