@@ -19,6 +19,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: 'JAM Music Sync Server is running!', status: 'online' });
+});
+
 // Store active sessions
 const sessions = new Map();
 
@@ -66,6 +71,11 @@ app.post('/api/session', (req, res) => {
   sessions.set(sessionId, session);
   
   res.json({ sessionId, hostId });
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 // Get session info
