@@ -746,7 +746,7 @@ const App: React.FC = () => {
                     <>
                       <p>Listening to host's audio</p>
                       <div className="guest-listening">
-                        🎵 {currentTrack.name}
+                        🎵 {currentTrack?.name || 'Live Audio'}
                       </div>
                     </>
                   ) : (
