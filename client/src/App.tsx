@@ -18,6 +18,7 @@ interface SyncState {
   volume: number;
   serverTime: number;
   controlsLocked: boolean;
+  users?: Array<{name: string, isHost: boolean}>;
 }
 
 const App: React.FC = () => {
@@ -71,9 +72,9 @@ const App: React.FC = () => {
       setControlsLocked(state.controlsLocked);
       
       // Update users from sync state
-      if (state.users) {
-        setUsers(state.users);
-        setClientCount(state.users.length);
+      if ((state as any).users) {
+        setUsers((state as any).users);
+        setClientCount((state as any).users.length);
       }
       
       if (audioRef.current && state.currentTrack) {
