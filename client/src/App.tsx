@@ -836,6 +836,10 @@ const App: React.FC = () => {
           style={{ display: 'none' }}
         />
       </main>
+      
+      <footer className="footer">
+        <p>© 2024 Puneet Kumar Garg. All rights reserved.</p>
+      </footer>
     </div>
   );
 };
